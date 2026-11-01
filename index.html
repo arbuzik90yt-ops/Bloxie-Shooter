@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Blox Shooter</title>
+<title>Bloxie Shooter</title>
 <style>
 :root{color-scheme:light dark;--ink:#fff;--panel:rgba(18,28,48,.74);--gold:#ffd23f;--hp:#46d36a;--bad:#ff4b4b;--sky:#8fd3ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--panel:rgba(6,9,20,.82);--sky:#6fb4e6}}
@@ -130,14 +130,14 @@ scene.background=new THREE.Color(0x8fd3ff);
 scene.fog=new THREE.Fog(0x8fd3ff,45,130);
 const camera=new THREE.PerspectiveCamera(78,innerWidth/innerHeight,.1,300);
 camera.rotation.order='YXZ'; scene.add(camera);
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'low-power',stencil:false,depth:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,.75));
 renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;
+renderer.shadowMap.enabled=false;
 document.body.prepend(renderer.domElement);
 const hemi=new THREE.HemisphereLight(0xffffff,0x6a8a5a,.85);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffffff,.7);
-sun.position.set(30,60,20); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+sun.position.set(30,60,20); sun.castShadow=false; sun.shadow.mapSize.set(256,256);
 const sc=sun.shadow.camera; sc.left=sc.bottom=-60; sc.right=sc.top=60; sc.far=160; scene.add(sun);
 
 /* пол с «шипами» как в Roblox */
@@ -147,9 +147,9 @@ function paintFloor(GR){g.fillStyle=GR[0]; g.fillRect(0,0,64,64);
 g.fillStyle=GR[1]; g.fillRect(0,0,64,2); g.fillRect(0,0,2,64);
 g.fillStyle=GR[2]; g.beginPath(); g.arc(32,32,13,0,7); g.fill();
 g.fillStyle=GR[3]; g.beginPath(); g.arc(32,30,11,0,7); g.fill()}paintFloor(['#5cb85c','#4aa34a','#74cf74','#8be08b']);
-const tex=new THREE.CanvasTexture(cv); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(30,30); tex.anisotropy=4;
+const tex=new THREE.CanvasTexture(cv); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(30,30); tex.anisotropy=1;
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshLambertMaterial({map:tex}));
-floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=false; scene.add(floor);
 
 /* препятствия */
 const obs=[],targets=[];
@@ -260,12 +260,14 @@ function groundAt(x,z,y){
 
 /* ---------- эффекты ---------- */
 function tracer(a,b,c,life=.08){
+  if(set.ultra)return;
   const len=a.distanceTo(b);
   const m=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,1),new THREE.MeshBasicMaterial({color:c}));
   m.scale.z=len; m.position.copy(a).add(b).multiplyScalar(.5); m.lookAt(b); scene.add(m);
   fx.push({m,life,t:0,type:'t'});
 }
 function burst(pos,cols,n=14){
+  if(set.ultra)n=Math.min(n,3);
   for(let i=0;i<n;i++){
     const m=new THREE.Mesh(cubeGeo,new THREE.MeshLambertMaterial({color:cols[i%cols.length]}));
     m.scale.setScalar(R(.15,.38)); m.position.copy(pos); scene.add(m);
@@ -320,7 +322,8 @@ const avAcc=mk(.98,.12,.52,0xffffff,0,1.02,0,avatarBody);
 const avEarL=mk(.2,.34,.12,0xe58a3c,-.24,3.2,-.02,avatarBody),avEarR=mk(.2,.34,.12,0xe58a3c,.24,3.2,-.02,avatarBody),avMuz=mk(.36,.24,.22,0xfff0d6,0,2.52,.47,avatarBody),avNose=mk(.12,.09,.06,0x1b1215,0,2.6,.6,avatarBody),avTail=mk(.24,.24,.8,0xe58a3c,0,1.2,-.6,avatarBody),avTip=mk(.26,.26,.26,0xfff0d6,0,1.4,-.98,avatarBody);avTail.rotation.x=.5;avTail.scale.set(1.5,1.5,1.1);avTip.scale.setScalar(1.4);avTip.position.set(0,1.45,-1.1);avEarL.scale.y=avEarR.scale.y=1.45;avEarL.position.y=avEarR.position.y=3.3;
 const avEarInL=mk(.12,.34,.04,0xffb6cf,-.24,3.32,.05,avatarBody),avEarInR=mk(.12,.34,.04,0xffb6cf,.24,3.32,.05,avatarBody),avEyeL=mk(.16,.18,.04,0x58c8ff,-.17,2.72,.37,avatarBody),avEyeR=mk(.16,.18,.04,0x58c8ff,.17,2.72,.37,avatarBody),avPupL=mk(.07,.12,.045,0x14202e,-.17,2.72,.385,avatarBody),avPupR=mk(.07,.12,.045,0x14202e,.17,2.72,.385,avatarBody),avChL=mk(.12,.22,.3,0xf6f8fc,-.38,2.5,.18,avatarBody),avChR=mk(.12,.22,.3,0xf6f8fc,.38,2.5,.18,avatarBody),avChest=mk(.56,.34,.12,0xf6f8fc,0,1.95,.28,avatarBody);
 const FUR_EXTRA=[avEarInL,avEarInR,avEyeL,avEyeR,avPupL,avPupR,avChL,avChR,avChest];
-function applyAvatar(){const a=AV[avatarIndex];avTorso.material.color.setHex(a.shirt);avHead.material.color.setHex(a.skin);avHair.material.color.setHex(a.hair);avLegL.children[0].material.color.setHex(a.pants);avLegR.children[0].material.color.setHex(a.pants);avArmL.children[0].material.color.setHex(a.shirt);avArmR.children[0].material.color.setHex(a.shirt);avFace.material.color.setHex(0x33212a);avBow.material.color.setHex(a.accent);avAcc.material.color.setHex(a.accent);avBow.visible=['cute','femboy'].includes(a.style);avAcc.visible=['cute','femboy'].includes(a.style);if(a.style==='femboy'){avAcc.scale.set(1,.7,1);avHair.scale.set(1.08,1.3,1.08)}else{avAcc.scale.set(1,1,1);avHair.scale.set(1,1,1)}furryApply(a)}
+let avSockL=null,avSockR=null;
+function applyAvatar(){const a=AV[avatarIndex];avTorso.material.color.setHex(a.shirt);avHead.material.color.setHex(a.skin);avHair.material.color.setHex(a.hair);avLegL.children[0].material.color.setHex(a.pants);avLegR.children[0].material.color.setHex(a.pants);avArmL.children[0].material.color.setHex(a.shirt);avArmR.children[0].material.color.setHex(a.shirt);avFace.material.color.setHex(0x33212a);avBow.material.color.setHex(a.accent);avAcc.material.color.setHex(a.accent);avBow.visible=['cute','femboy'].includes(a.style);avAcc.visible=['cute','femboy'].includes(a.style);if(avSockL){avSockL.visible=avSockR.visible=['femboy','furry'].includes(a.style);}if(a.style==='femboy'){avAcc.scale.set(1,.7,1);avHair.scale.set(1.08,1.3,1.08)}else{avAcc.scale.set(1,1,1);avHair.scale.set(1,1,1)}furryApply(a)}
 function furryApply(a){const fu=a.style==='furry';[avEarL,avEarR,avMuz,avNose,avTail,avTip].concat(FUR_EXTRA).forEach(m=>m.visible=fu);if(fu){[avEarL,avEarR,avTail,avChL,avChR,avChest].forEach(m=>m.material.color.setHex(a.skin));avTip.material.color.setHex(a.accent);avMuz.material.color.setHex(0xeef2f8);avNose.material.color.setHex(0x2b2230);[avArmL,avArmR,avLegL,avLegR].forEach(g=>g.children[0].material.color.setHex(a.skin))}}
 function buildAvatars(){const el=$('avatars');if(!el)return;el.innerHTML='';AV.forEach((a,i)=>{const b=document.createElement('button');b.className='avatar-choice'+(i===avatarIndex?' on':'');b.textContent='🧍 '+a.n;b.onclick=()=>{avatarIndex=i;try{localStorage.setItem('blox-avatar',String(i))}catch(e){}applyAvatar();buildAvatars()};el.appendChild(b)})}
 applyAvatar();
@@ -333,6 +336,8 @@ const sockTex=new THREE.CanvasTexture(sockCanvas);sockTex.wrapS=sockTex.wrapT=TH
 const fpSkinMat=new THREE.MeshLambertMaterial({color:0xf0c58b});
 const fpPantsMat=new THREE.MeshLambertMaterial({color:0x72558f});
 const fpSockMat=new THREE.MeshLambertMaterial({map:sockTex});
+// Полосатые чулки также для модели Белого фурри в третьем лице.
+avSockL=new THREE.Mesh(new THREE.CylinderGeometry(.2,.185,.62,10),fpSockMat);avSockR=avSockL.clone();avSockL.position.set(0,-.62,0);avSockR.position.set(0,-.62,0);avLegL.add(avSockL);avLegR.add(avSockR);avSockL.visible=avSockR.visible=['femboy','furry'].includes(AV[avatarIndex].style);
 const fpBootMat=new THREE.MeshLambertMaterial({color:0x29283e});
 const fpTrimMat=new THREE.MeshLambertMaterial({color:0xff75b9});
 const fpLegRigs=[];
@@ -401,7 +406,7 @@ function updateFpLook(dt,grounded,sl,sprint){
   fpLegRigs.forEach((r,i)=>{
     const h=pose[i][0],k=pose[i][1];
     r.hip.rotation.x=h;r.knee.rotation.x=k;r.ankle.rotation.x=grounded?-(h+k)*.8:.25;
-    r.sock.visible=femboy;
+    r.sock.visible=femboy||furry;
     r.thigh.material=(femboy||furry)?fpSkinMat:fpPantsMat;r.shin.material=(femboy||furry)?fpSkinMat:fpPantsMat;
   });
   skirtGroup.visible=femboy;
@@ -617,13 +622,13 @@ function update(dt){
 
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 /* настройки, гранаты, эффекты, рейтинг */
-let set={bhop:1,autofs:0,fov:78,sens:1,touchSens:1,touchSize:1,vol:.8,res:1,shadow:1,bob:1,tilt:1,inv:0,fps:0,diff:1,map:0,name:''};try{Object.assign(set,JSON.parse(localStorage.getItem('blox-set'))||{})}catch(e){}
+let set={bhop:1,autofs:0,fov:78,sens:1,touchSens:1,touchSize:1,vol:.8,res:.65,shadow:0,bob:1,tilt:1,inv:0,fps:0,diff:1,map:0,name:''};try{Object.assign(set,JSON.parse(localStorage.getItem('blox-set'))||{})}catch(e){}
 const DKB={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',sprint:'ShiftLeft',slide:'KeyC',reload:'KeyR',inspect:'KeyF',gren:'KeyG',skin:'KeyB',last:'KeyQ'};set.kb=Object.assign({},DKB,set.kb);
 const ACT=[['fwd','Вперёд'],['back','Назад'],['left','Влево'],['right','Вправо'],['jump','Прыжок'],['sprint','Бег'],['slide','Слайд'],['reload','Перезарядка'],['inspect','Трюк ножом'],['gren','Граната'],['skin','Сменить скин'],['last','Прошлое оружие']],keyName=c=>c.replace(/^Key|^Digit|^Arrow/,'');
 let bhS=1,landT=1,rebind=null,gren=3,gcd=0,shake=0,bossWave=false,bossDone=false,fa=.016,lbDb=null;const gl=[];
 const saveSet=()=>{try{localStorage.setItem('blox-set',JSON.stringify(set))}catch(e){}};
 const esc=s=>String(s).replace(/[&<>]/g,c=>'&#'+c.charCodeAt(0)+';');
-function applySet(){renderer.setPixelRatio(Math.min(devicePixelRatio,2)*set.res);renderer.setSize(innerWidth,innerHeight);sun.castShadow=!!set.shadow;$('fps').style.display=set.fps?'block':'none';document.documentElement.style.setProperty('--touch-scale',String(set.touchSize||1));$('joy').style.width=(140*(set.joySize||1))+'px';$('joy').style.height=(140*(set.joySize||1))+'px';$('knob').style.left=(42*(set.joySize||1))+'px';$('knob').style.top=(42*(set.joySize||1))+'px'}
+function applySet(){const ultra=!!set.ultra;renderer.setPixelRatio(ultra?Math.min(devicePixelRatio*.28,.32):Math.max(.4,Math.min(devicePixelRatio*.65,.85)*Math.max(.5,Math.min(1,set.res))));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=false;sun.castShadow=false;scene.fog.near=ultra?28:45;scene.fog.far=ultra?78:130;$('fps').style.display=set.fps?'block':'none';document.documentElement.style.setProperty('--touch-scale',String(set.touchSize||1));$('joy').style.width=(140*(set.joySize||1))+'px';$('joy').style.height=(140*(set.joySize||1))+'px';$('knob').style.left=(42*(set.joySize||1))+'px';$('knob').style.top=(42*(set.joySize||1))+'px'}
 function hitEnemy(o,d){const e=o.userData.e,hs=o.userData.head;e.hp-=d*(hs?2:1);e.flash=.08;e.meshes.forEach(m=>m.material.emissive.setHex(0xff3333));marker();if(e.hp<=0)kill(e,hs)}
 function pellet(w){mpA=null;camera.updateMatrixWorld(true);ray.far=60;ray.setFromCamera({x:R(-1,1)*w.sp,y:R(-1,1)*w.sp},camera);const h=ray.intersectObjects(targets.concat(...enemies.map(e=>e.meshes),sbMeshes()),false)[0],end=h?h.point:ray.ray.at(60,new THREE.Vector3());flash.getWorldPosition(v);tracer(v.clone(),end,0xffd27f,.05);if(mpOn)mpA={a:v.toArray().map(r2),b:end.toArray().map(r2),w:cur};if(h&&h.object.userData.e)hitEnemy(h.object,w.dmg);else if(h&&h.object.userData.sb)sbHit(h,w.dmg);if(mpOn&&mpA)mpSend(mpA)}
 function throwG(){if(state!=='play'||gren<=0||gcd>0)return;gren--;gcd=.6;const m=new THREE.Mesh(new THREE.BoxGeometry(.28,.28,.28),new THREE.MeshLambertMaterial({color:0x2e7d32,emissive:0x112211}));camera.getWorldDirection(v);m.position.copy(camera.position).addScaledVector(v,.8);scene.add(m);gl.push({m,vx:v.x*20,vy:v.y*20+5,vz:v.z*20,t:1.8});beep(250,.1,'triangle',.05,150);hud()}
@@ -633,7 +638,7 @@ q.t-=dt;if(q.t<=0){explode(p);scene.remove(q.m);gl.splice(i,1)}}}
 function explode(p){blast(p);burst(p,[0xff7a00,0xffd23f,0xff3b00],26);const m=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xffa030,transparent:true,opacity:.8}));m.position.copy(p);scene.add(m);fx.push({m,life:.35,t:0,type:'x'});beep(70,.6,'sawtooth',.12,-40);shake=.6;
 for(const e of enemies.slice()){const d=e.g.position.distanceTo(p);if(d<9){e.hp-=170*(1-d/9);e.flash=.1;e.meshes.forEach(q=>q.material.emissive.setHex(0xff5522));if(e.hp<=0)kill(e,false)}}
 const dp=Math.hypot(P.x-p.x,P.y+1-p.y,P.z-p.z);if(dp<6)hurt(Math.round(35*(1-dp/6)))}
-function fireFx(wk,dt){const s=SK[skin[cur]];if(!s.fire||state!=='play'||scoped||Math.random()>dt*70)return;wk.grp.getWorldPosition(v);const m=new THREE.Mesh(cubeGeo,new THREE.MeshBasicMaterial({color:s.pl?[0xb84dff,0x4dffff][Math.random()*2|0]:[0xff5a00,0xffd23f,0xff3300][Math.random()*3|0]}));m.scale.setScalar(R(.04,.1));m.position.set(v.x+R(-.1,.1),v.y+R(-.1,.1),v.z+R(-.1,.1));scene.add(m);fx.push({m,type:'p',fl:1,life:.5,t:0,vx:R(-.4,.4),vy:R(.8,2),vz:R(-.4,.4)})}
+function fireFx(wk,dt){if(set.ultra)return;const s=SK[skin[cur]];if(!s.fire||state!=='play'||scoped||Math.random()>dt*70)return;wk.grp.getWorldPosition(v);const m=new THREE.Mesh(cubeGeo,new THREE.MeshBasicMaterial({color:s.pl?[0xb84dff,0x4dffff][Math.random()*2|0]:[0xff5a00,0xffd23f,0xff3300][Math.random()*3|0]}));m.scale.setScalar(R(.04,.1));m.position.set(v.x+R(-.1,.1),v.y+R(-.1,.1),v.z+R(-.1,.1));scene.add(m);fx.push({m,type:'p',fl:1,life:.5,t:0,vx:R(-.4,.4),vy:R(.8,2),vz:R(-.4,.4)})}
 async function loadLb(){const el=$('lb');if(!lbDb){el.textContent='';return}try{const s=await lbDb.collection('scores').orderBy('score','desc').limit(5).get();el.innerHTML='<b>Топ игроков</b><br>'+(s.docs.length?s.docs.map((d,i)=>{const x=d.data();return (i+1)+'. '+esc(x.name)+' — '+(x.score|0)+' (волна '+(x.wave|0)+')'}).join('<br>'):'пока пусто')}catch(e){el.textContent=''}}
 async function postScore(){if(!lbDb)return;try{const u=await claude.use('user'),id=await u.id();if(!id)return;const ref=lbDb.collection('scores').doc(id),old=await ref.get();if(old.exists&&old.data().score>=score)return;await ref.set({name:(set.name||'Игрок').slice(0,16),score,wave});loadLb()}catch(e){}}
 function showV(k){document.querySelector('.card').dataset.v=k;['main','skins','set','mp','map'].forEach(n=>$('v'+n).hidden=n!==k);if(k==='main'){loadLb();$('play').style.display=state==='menu'?'none':'';if(state==='menu'){$('overlay').querySelector('h1').innerHTML='BLOX<br>SHOOTER';$('sub').textContent=SUB0}}}
@@ -649,6 +654,7 @@ function buildSets(){const b=$('sets');b.innerHTML='';const row=(l,el)=>{const r
 const sld=(k,mn,mx,st,f)=>{const i=document.createElement('input');i.type='range';i.min=mn;i.max=mx;i.step=st;i.value=set[k];const o=document.createElement('b'),sh=()=>o.textContent=f?f(set[k]):set[k];sh();i.oninput=()=>{set[k]=+i.value;sh();saveSet();applySet()};const w=document.createElement('div');w.append(i,o);return w};
 const ck=k=>{const i=document.createElement('input');i.type='checkbox';i.checked=!!set[k];i.onchange=()=>{set[k]=i.checked?1:0;saveSet();applySet()};return i};
 row('FOV (поле зрения)',sld('fov',60,110,1));row('Чувствительность мыши',sld('sens',.3,2.5,.05,x=>x.toFixed(2)));row('Чувствительность тача',sld('touchSens',.4,2.5,.05,x=>x.toFixed(2)));row('Размер кнопок на экране',sld('touchSize',.65,1.5,.05,x=>Math.round(x*100)+'%'));row('Размер джойстика',sld('joySize',.7,1.5,.05,x=>Math.round(x*100)+'%'));row('Громкость',sld('vol',0,1,.05,x=>Math.round(x*100)+'%'));row('Разрешение',sld('res',.5,1,.25,x=>Math.round(x*100)+'%'));
+row('УЛЬТРА-ОПТИМИЗАЦИЯ (максимальный FPS)',ck('ultra'));
 row('Тени',ck('shadow'));row('Покачивание камеры',ck('bob'));row('Наклон при движении',ck('tilt'));row('Инвертировать Y',ck('inv'));row('Показывать FPS',ck('fps'));
 const d=document.createElement('select');[['Лёгкая',.75],['Обычная',1],['Сложная',1.4]].forEach(a=>d.add(new Option(a[0],a[1])));d.value=set.diff;d.onchange=()=>{set.diff=+d.value;saveSet()};row('Сложность',d);
 const nm=document.createElement('input');nm.type='text';nm.maxLength=16;nm.value=set.name;nm.placeholder='Ник';nm.oninput=()=>{set.name=nm.value;saveSet()};row('Ник в рейтинге',nm);row('Bhop (разгон прыжками)',ck('bhop'));row('Полный экран при старте',ck('autofs'));const fb=document.createElement('button');fb.className='sec';fb.textContent='⛶ Полный экран';fb.onclick=fsToggle;b.appendChild(fb);const hd=document.createElement('div');hd.textContent='Управление: нажми кнопку и выбери клавишу';hd.style.cssText='margin:12px 0 4px;font-weight:700';b.appendChild(hd);ACT.forEach(a=>{const k=document.createElement('button');k.className='kb';k.textContent=keyName(set.kb[a[0]]);k.onclick=()=>{k.textContent='нажми…';rebind={k:a[0],b:k}};row(a[1],k)});const rs=document.createElement('button');rs.className='sec';rs.textContent='Сбросить клавиши';rs.onclick=()=>{set.kb=Object.assign({},DKB);saveSet();buildSets()};b.appendChild(rs);const edit=document.createElement('button');edit.className='sec';edit.textContent='✥ Настроить расположение кнопок телефона';edit.onclick=()=>toggleTouchEdit(true);b.appendChild(edit);const done=document.createElement('button');done.className='sec';done.textContent='Готово с расположением кнопок';done.onclick=()=>toggleTouchEdit(false);b.appendChild(done)}
@@ -657,7 +663,7 @@ $('bset').onclick=()=>showV('set');$('bsk').onclick=()=>showV('skins');document.
 function fsToggle(){try{const d=document,el=d.documentElement,exit=d.exitFullscreen||d.webkitExitFullscreen,enter=el.requestFullscreen||el.webkitRequestFullscreen;if(d.fullscreenElement||d.webkitFullscreenElement){if(exit)exit.call(d);else say('Выход из полного экрана недоступен',1800)}else if(enter){const p=enter.call(el);p&&p.catch&&p.catch(()=>say('Браузер не разрешил полный экран',2000))}else say('Полный экран не поддерживается этим браузером',2200)}catch(e){say('Не удалось включить полный экран',1800)}}
 document.addEventListener('fullscreenchange',()=>{setTimeout(()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)},80)});
 document.addEventListener('webkitfullscreenchange',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-function puff(p){const m=new THREE.Mesh(cubeGeo,new THREE.MeshBasicMaterial({color:0xdddddd,transparent:true,opacity:.7}));m.scale.setScalar(R(.15,.3));m.position.set(p.x+R(-.3,.3),.15,p.z+R(-.3,.3));scene.add(m);fx.push({m,type:'p',fl:1,life:.45,t:0,vx:R(-.5,.5),vy:R(.6,1.3),vz:R(-.5,.5)})}
+function puff(p){if(set.ultra)return;const m=new THREE.Mesh(cubeGeo,new THREE.MeshBasicMaterial({color:0xdddddd,transparent:true,opacity:.7}));m.scale.setScalar(R(.15,.3));m.position.set(p.x+R(-.3,.3),.15,p.z+R(-.3,.3));scene.add(m);fx.push({m,type:'p',fl:1,life:.45,t:0,vx:R(-.5,.5),vy:R(.6,1.3),vz:R(-.5,.5)})}
 function animE(e,mv,dt,dist){
   const g=e.g,st=e.style,run=mv>0?1:mv<0?.55:0;
   e.t+=dt*e.speed*(run?1:0.18);
@@ -859,7 +865,7 @@ function rpBuild(id,avi){
   const a=AV[avi]||AV[0],fem=a.style==='femboy',fur=a.style==='furry',shirt=fem?0x0d0d12:a.shirt,legC=fem||fur?a.skin:a.pants,armC=fem||fur?a.skin:a.shirt;
   const gp=new THREE.Group(),pv=(x,y)=>{const q=new THREE.Group();q.position.set(x,y,0);gp.add(q);return q};
   const legL=pv(-.25,1.05),legR=pv(.25,1.05),armL=pv(-.67,2.05),armR=pv(.67,2.05);
-  [legL,legR].forEach(l=>{mk(.34,.95,.38,legC,0,-.45,0,l);mk(.4,.16,.5,fur?a.skin:fem?0x29283e:0x20232b,0,-.93,.06,l);if(fem){const so=new THREE.Mesh(new THREE.CylinderGeometry(.2,.185,.62,10),fpSockMat);so.position.set(0,-.62,0);l.add(so)}});
+  [legL,legR].forEach(l=>{mk(.34,.95,.38,legC,0,-.45,0,l);mk(.4,.16,.5,fur?a.skin:fem?0x29283e:0x20232b,0,-.93,.06,l);if(fem||fur){const so=new THREE.Mesh(new THREE.CylinderGeometry(.2,.185,.62,10),fpSockMat);so.position.set(0,-.62,0);l.add(so)}});
   [armL,armR].forEach(r=>mk(.3,.9,.34,armC,0,-.42,0,r));
   mk(.95,1.15,.48,shirt,0,1.65,0,gp);
   const head=mk(.72,.72,.72,a.skin,0,2.65,0,gp),hair=mk(.78,.25,.78,a.hair,0,3.02,0,gp);
@@ -1285,7 +1291,7 @@ $('newMap').onclick=()=>{const c=sanMap({n:'Моя карта '+(CM.length+1),mo
 
 equip(2,1);buildSkins();buildAvatars();const clock=new THREE.Clock();
 (function loop(){
-  requestAnimationFrame(loop);
+  setTimeout(loop,0); // Uncapped game loop: do not wait for the display refresh via requestAnimationFrame
   const raw=clock.getDelta(),dt=Math.min(raw,.05);if(set.fps){fa=fa*.9+raw*.1;$('fps').textContent=Math.round(1/fa)+' FPS'}
   if(state==='play'){if(!spawnOpen)update(dt*(sbx?tScale:1))}
   else if(state==='edit')edUpdate(dt);
